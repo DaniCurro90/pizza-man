@@ -10,7 +10,6 @@
       font-family: 'Arial', sans-serif;
       text-align: center;
       margin: 0;
-      overflow: hidden;
     }
     header {
       background-color: #002856;
@@ -19,16 +18,14 @@
     header img {
       height: 60px;
     }
-    h1 {
-      color: #e94e77;
-      font-size: 2em;
-      margin: 10px 0;
-    }
     canvas {
       display: block;
       margin: 0 auto;
-      background-color: #f2c94c;
+      background-color: #000;
       border: 5px solid #002856;
+    }
+    audio {
+      display: none;
     }
   </style>
 </head>
@@ -36,96 +33,123 @@
   <header>
     <img src="cresci_logo.png" alt="Cresci Logo" />
   </header>
-  <h1>Pizza-Man 🍕 | Cresci Pizzeria</h1>
-  <canvas id="game" width="400" height="400"></canvas>
+  <canvas id="game" width="420" height="420"></canvas>
+  <audio id="bgm" src="music.mp3" autoplay loop></audio>
 
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
-
     const tileSize = 20;
-    const rows = canvas.height / tileSize;
-    const cols = canvas.width / tileSize;
+    const rows = 21;
+    const cols = 21;
 
-    let pizzaMan = { x: 5, y: 5, dx: 1, dy: 0 };
-    let pizzas = [];
+    const map = [
+      "#####################",
+      "#........#........#.#",
+      "#.###.###.#.###.###.#",
+      "#o###.###.#.###.###o#",
+      "#.###.###.#.###.###.#",
+      "#...................#",
+      "#.###.#.#####.#.###.#",
+      "#.....#...#...#.....#",
+      "#####.### # ###.#####",
+      "    #.#       #.#    ",
+      "#####.# ##### #.#####",
+      "#........#........#.#",
+      "#.###.###.#.###.###.#",
+      "#o..#...........#..o#",
+      "###.#.#.#####.#.#.###",
+      "#.....#...#...#.....#",
+      "#.#######.#.#######.#",
+      "#...................#",
+      "#.###.###.#.###.###.#",
+      "#o.................o#",
+      "#####################"
+    ];
+
+    let player = { x: 10, y: 15, dx: 0, dy: 0 };
+    let enemies = [
+      { x: 9, y: 9, color: "#ffb347" },
+      { x: 11, y: 9, color: "#ffb347" }
+    ];
     let score = 0;
 
-    for (let i = 0; i < 50; i++) {
-      pizzas.push({
-        x: Math.floor(Math.random() * cols),
-        y: Math.floor(Math.random() * rows)
-      });
+    function drawTile(x, y, char) {
+      const px = x * tileSize;
+      const py = y * tileSize;
+      if (char === "#") {
+        ctx.fillStyle = "#002856";
+        ctx.fillRect(px, py, tileSize, tileSize);
+      } else if (char === ".") {
+        ctx.fillStyle = "#f2c94c";
+        ctx.beginPath();
+        ctx.arc(px + tileSize/2, py + tileSize/2, 3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (char === "o") {
+        ctx.fillStyle = "#f2c94c";
+        ctx.beginPath();
+        ctx.arc(px + tileSize/2, py + tileSize/2, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
-    function drawPizzaMan() {
+    function drawMap() {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          drawTile(x, y, map[y][x]);
+        }
+      }
+    }
+
+    function drawPlayer() {
       ctx.fillStyle = "#ff6347";
       ctx.beginPath();
-      ctx.arc(
-        pizzaMan.x * tileSize + tileSize / 2,
-        pizzaMan.y * tileSize + tileSize / 2,
-        tileSize / 2,
-        0.2 * Math.PI,
-        1.8 * Math.PI
-      );
-      ctx.lineTo(pizzaMan.x * tileSize + tileSize / 2, pizzaMan.y * tileSize + tileSize / 2);
+      ctx.arc(player.x * tileSize + tileSize/2, player.y * tileSize + tileSize/2, tileSize/2, 0.2 * Math.PI, 1.8 * Math.PI);
+      ctx.lineTo(player.x * tileSize + tileSize/2, player.y * tileSize + tileSize/2);
       ctx.fill();
     }
 
-    function drawPizzas() {
-      ctx.fillStyle = "#ffffff";
-      pizzas.forEach(pizza => {
+    function drawEnemies() {
+      enemies.forEach(enemy => {
+        ctx.fillStyle = enemy.color;
         ctx.beginPath();
-        ctx.arc(
-          pizza.x * tileSize + tileSize / 2,
-          pizza.y * tileSize + tileSize / 2,
-          4,
-          0,
-          Math.PI * 2
-        );
+        ctx.arc(enemy.x * tileSize + tileSize/2, enemy.y * tileSize + tileSize/2, tileSize/2 - 2, 0, Math.PI * 2);
         ctx.fill();
       });
     }
 
-    function move() {
-      pizzaMan.x += pizzaMan.dx;
-      pizzaMan.y += pizzaMan.dy;
-
-      if (pizzaMan.x < 0) pizzaMan.x = cols - 1;
-      if (pizzaMan.x >= cols) pizzaMan.x = 0;
-      if (pizzaMan.y < 0) pizzaMan.y = rows - 1;
-      if (pizzaMan.y >= rows) pizzaMan.y = 0;
-
-      pizzas = pizzas.filter(pizza => {
-        if (pizza.x === pizzaMan.x && pizza.y === pizzaMan.y) {
+    function movePlayer() {
+      const nextChar = map[player.y + player.dy]?.[player.x + player.dx];
+      if (nextChar && nextChar !== "#") {
+        player.x += player.dx;
+        player.y += player.dy;
+        if (map[player.y][player.x] === "." || map[player.y][player.x] === "o") {
+          map[player.y] = map[player.y].substring(0, player.x) + " " + map[player.y].substring(player.x + 1);
           score++;
-          return false;
         }
-        return true;
-      });
+      }
     }
 
     function drawScore() {
-      ctx.fillStyle = "#002856";
+      ctx.fillStyle = "#ffffff";
       ctx.font = "16px Arial";
       ctx.fillText("Score: " + score, 10, 20);
     }
 
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawPizzas();
-      drawPizzaMan();
+      drawMap();
+      drawPlayer();
+      drawEnemies();
       drawScore();
-      move();
+      movePlayer();
     }
 
     document.addEventListener("keydown", e => {
-      switch (e.key) {
-        case "ArrowUp": pizzaMan.dx = 0; pizzaMan.dy = -1; break;
-        case "ArrowDown": pizzaMan.dx = 0; pizzaMan.dy = 1; break;
-        case "ArrowLeft": pizzaMan.dx = -1; pizzaMan.dy = 0; break;
-        case "ArrowRight": pizzaMan.dx = 1; pizzaMan.dy = 0; break;
-      }
+      if (e.key === "ArrowUp") { player.dx = 0; player.dy = -1; }
+      if (e.key === "ArrowDown") { player.dx = 0; player.dy = 1; }
+      if (e.key === "ArrowLeft") { player.dx = -1; player.dy = 0; }
+      if (e.key === "ArrowRight") { player.dx = 1; player.dy = 0; }
     });
 
     setInterval(gameLoop, 150);
