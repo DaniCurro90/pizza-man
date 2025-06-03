@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pizza-Man | Cresci Pizzeria</title>
+  <style>
+    body {
+      background-color: #fdf9f2;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      margin: 0;
+      overflow: hidden;
+    }
+    header {
+      background-color: #002856;
+      padding: 10px;
+    }
+    header img {
+      height: 60px;
+    }
+    h1 {
+      color: #e94e77;
+      font-size: 2em;
+      margin: 10px 0;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background-color: #f2c94c;
+      border: 5px solid #002856;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="cresci_logo.png" alt="Cresci Logo" />
+  </header>
+  <h1>Pizza-Man 🍕 | Cresci Pizzeria</h1>
+  <canvas id="game" width="400" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const tileSize = 20;
+    const rows = canvas.height / tileSize;
+    const cols = canvas.width / tileSize;
+
+    let pizzaMan = { x: 5, y: 5, dx: 1, dy: 0 };
+    let pizzas = [];
+    let score = 0;
+
+    for (let i = 0; i < 50; i++) {
+      pizzas.push({
+        x: Math.floor(Math.random() * cols),
+        y: Math.floor(Math.random() * rows)
+      });
+    }
+
+    function drawPizzaMan() {
+      ctx.fillStyle = "#ff6347";
+      ctx.beginPath();
+      ctx.arc(
+        pizzaMan.x * tileSize + tileSize / 2,
+        pizzaMan.y * tileSize + tileSize / 2,
+        tileSize / 2,
+        0.2 * Math.PI,
+        1.8 * Math.PI
+      );
+      ctx.lineTo(pizzaMan.x * tileSize + tileSize / 2, pizzaMan.y * tileSize + tileSize / 2);
+      ctx.fill();
+    }
+
+    function drawPizzas() {
+      ctx.fillStyle = "#ffffff";
+      pizzas.forEach(pizza => {
+        ctx.beginPath();
+        ctx.arc(
+          pizza.x * tileSize + tileSize / 2,
+          pizza.y * tileSize + tileSize / 2,
+          4,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      });
+    }
+
+    function move() {
+      pizzaMan.x += pizzaMan.dx;
+      pizzaMan.y += pizzaMan.dy;
+
+      if (pizzaMan.x < 0) pizzaMan.x = cols - 1;
+      if (pizzaMan.x >= cols) pizzaMan.x = 0;
+      if (pizzaMan.y < 0) pizzaMan.y = rows - 1;
+      if (pizzaMan.y >= rows) pizzaMan.y = 0;
+
+      pizzas = pizzas.filter(pizza => {
+        if (pizza.x === pizzaMan.x && pizza.y === pizzaMan.y) {
+          score++;
+          return false;
+        }
+        return true;
+      });
+    }
+
+    function drawScore() {
+      ctx.fillStyle = "#002856";
+      ctx.font = "16px Arial";
+      ctx.fillText("Score: " + score, 10, 20);
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPizzas();
+      drawPizzaMan();
+      drawScore();
+      move();
+    }
+
+    document.addEventListener("keydown", e => {
+      switch (e.key) {
+        case "ArrowUp": pizzaMan.dx = 0; pizzaMan.dy = -1; break;
+        case "ArrowDown": pizzaMan.dx = 0; pizzaMan.dy = 1; break;
+        case "ArrowLeft": pizzaMan.dx = -1; pizzaMan.dy = 0; break;
+        case "ArrowRight": pizzaMan.dx = 1; pizzaMan.dy = 0; break;
+      }
+    });
+
+    setInterval(gameLoop, 150);
+  </script>
+</body>
+</html>
